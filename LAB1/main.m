@@ -4,7 +4,7 @@ clc;
 
 load(".\manipulator1.mat");
 
-%% Plot data
+%% Data plotting
 
 figure;
 subplot(3,1,1)
@@ -24,6 +24,7 @@ plot(t, y1);
 xlabel('Time (s)');
 ylabel('Torque y1');
 grid on;
+sgtitle('First data set');
 
 figure;
 subplot(3,1,1)
@@ -43,18 +44,18 @@ plot(t, y2);
 xlabel('Time (s)');
 ylabel('Torque y2');
 grid on;
-
+sgtitle('Second data set');
 %% Computation of the acceleration
 
-ud1_dot = derivative(u1d, Ts);
-ud2_dot = derivative(u2d, Ts);
+u1dd = derivative(u1d, Ts);
+u2dd = derivative(u2d, Ts);
 
 %% Inverse dynamic
 
-x1 = [u1 u1d ud1_dot];
-x2 = [u2 u2d ud2_dot];
+x1 = [u1 u1d u1dd];
+x2 = [u2 u2d u2dd];
 
-sigma_square_hat = 4.2;
+sigma_square = 4.2;
 lambda = 10;
 beta = 100;
 
@@ -69,16 +70,16 @@ figure; hold on;
 
 for i = 1:numel(param)
     values = param{i}; 
-    y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square_hat);
+    y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
     plot(t, y_hat_2, 'DisplayName', ...
-        "β = " + values("beta") + ", λ = " + values("lambda"));
+        "\beta = " + values("beta") + ", \lambda = " + values("lambda"));
 end
 
-plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'Real torque');
+plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'y_2');
 legend show;
 xlabel('Time');
 ylabel('Torque');
-title('Validation Step');
+title('$y_2$ and $\hat{y}_2$', 'Interpreter', 'latex');
 
 %% Optimal value of hyperparameters (not required)
 lambdas = round(logspace(0, 6, 50));
@@ -95,7 +96,7 @@ fprintf('Optimal beta: %.2f\n', beta_opt);
 fprintf('Minimum MSE: %.2f\n', minMSE);
 
 figure
-y_hat_2 = g_map(y1, x2, x1, beta_opt, lambda_opt, sigma_square_hat);
+y_hat_2 = g_map(y1, x2, x1, beta_opt, lambda_opt, sigma_square);
 plot(t, y_hat_2, 'DisplayName', ...
         "β = " + beta_opt + ", λ = " + lambda_opt);
 hold on;
@@ -106,19 +107,19 @@ ylabel('Torque');
 title('Optimal Parameters');
 
 %%
-wt = transpose([zeros(1,10) 10*ones(1,(N-10))]);
-wtd = derivative(wt, Ts);
-wtdd = derivative(wtd, Ts);
+w = transpose([zeros(1,10) 10*ones(1,(N-10))]);
+wd = derivative(w, Ts);
+wdd = derivative(wd, Ts);
 
-xf = [wt wtd wtdd];
+xf = [w wd wdd];
 
-lambda = 10;
-beta = 100;
+yf_matrix = zeros(size(w, 1), numel(param));
+for i = 1:numel(param)
+    values = param{i}; 
+    yf_matrix(:,i) = g_map(y1, xf, x1, values("beta"), values("lambda"), sigma_square);
+end
 
-yf = g_map(y1, xf, x1, beta, lambda, sigma_square_hat);
-
-
-function  y_hat= g_map(y1, x, x1, beta, lambda, sigma)
+function  y_hat= g_map(y1, x, x1, beta, lambda, sigma_square)
     y_hat = lambda*Cauchy_kernel(x, x1, beta)*inv(lambda*Cauchy_kernel(x1, x1, beta)+ ...
-            sigma*eye(size(x1, 1)))*y1;
+            sigma_square*eye(size(x1, 1)))*y1;
 end
