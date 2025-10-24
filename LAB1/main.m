@@ -80,6 +80,30 @@ xlabel('Time');
 ylabel('Torque');
 title('Validation Step');
 
+%% Optimal value of hyperparameters (not required)
+lambdas = round(logspace(0, 6, 50));
+betas = round(logspace(0, 6, 50));
+res = minMSE(lambdas, betas, y2, y1, x1, x2);
+
+[~, idx] = min(res(:,3));
+beta_opt = res(idx, 1);
+lambda_opt = res(idx, 2); 
+minMSE = res(idx, 3);
+% Display optimal hyperparameters
+fprintf('Optimal lambda: %.2f\n', lambda_opt);
+fprintf('Optimal beta: %.2f\n', beta_opt);
+fprintf('Minimum MSE: %.2f\n', minMSE);
+
+figure
+y_hat_2 = g_map(y1, x2, x1, beta_opt, lambda_opt, sigma_square_hat);
+plot(t, y_hat_2, 'DisplayName', ...
+        "β = " + beta_opt + ", λ = " + lambda_opt);
+hold on;
+plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'Real torque');
+legend show;
+xlabel('Time');
+ylabel('Torque');
+title('Optimal Parameters');
 
 %%
 wt = transpose([zeros(1,10) 10*ones(1,(N-10))]);
