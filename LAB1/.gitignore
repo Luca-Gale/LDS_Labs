@@ -1,0 +1,44 @@
+# ==========================
+# MATLAB / Simulink files
+# ==========================
+*.asv               # Autosave files
+*.mex*              # Compiled MEX files
+*.mdl.backup        # Model backups
+*.slx.autosave      # Simulink autosave
+*.slxp              # Simulink packaged projects
+*.autosave
+
+# ==========================
+# System / OS files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Editor / IDE files
+# ==========================
+*.bak
+*.swp
+*.tmp
+*.log
+*.code-workspace
+*.asv
+*.slxc
+*.slx.r2024b
+.vscode/
+.idea/
+
+# ==========================
+# Build / Output directories
+# ==========================
+slprj/
+build/
+bin/
+output/
+results/
+logs/
+temp/
+*.mat               # Optional: ignore large data files
+!example.mat        # (Use ! to keep specific ones)
+
+
