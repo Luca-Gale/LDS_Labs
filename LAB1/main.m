@@ -62,7 +62,8 @@ beta = 100;
 
 %% Validation Step
 
-[y_hat_2, ci_low, ci_high] = g_map_ci(y1, x2, x1, 100, 10, sigma_square);
+y_hat_2 = g_map(y1, x2, x1, 100, 10, sigma_square);
+
 figure;
 hold on;
 plot(t, y_hat_2, 'DisplayName', ...
@@ -75,25 +76,9 @@ xlabel('Time');
 ylabel('Torque');
 title('$y_2$ and $\hat{y}_2$', 'Interpreter', 'latex');
 
-% Plot also the confidence interval
-figure;
-hold on;
-fill([t; flipud(t)], [ci_low; flipud(ci_high)], [0.8 0.5 0.5], ...
-    'EdgeColor','none', 'FaceAlpha',0.5, ...
-    'DisplayName', '95% CI');
-plot(t, y_hat_2, 'DisplayName', ...
-    "\beta = " + 100 + ", \lambda = " + 10);
-
-plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'y_2');
-
-legend show;
-xlabel('Time');
-ylabel('Torque');
-title('Confidence interval of $\hat{y}_2$', 'Interpreter', 'latex');
-
 %% Validation with other values of the parameters
 
-param = {
+PARAM = {
     dictionary(["lambda","beta"], [10,  100]);
     dictionary(["lambda","beta"], [0.1, 100]);
     dictionary(["lambda","beta"], [10,  1])
@@ -102,21 +87,11 @@ param = {
 figure;
 hold on;
 
-for i = 1:numel(param)
-    values = param{i};
+for i = 1:numel(PARAM)
+    values = PARAM{i};
     y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
     plot(t, y_hat_2, 'DisplayName', ...
         "\beta = " + values("beta") + ", \lambda = " + values("lambda"));
-    %[y_hat_21, ci_low, ci_high] = g_map_ci(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
-
-    % Plot mean and confidence interval
-    % fill([t; flipud(t)], [ci_low; flipud(ci_high)], [0.8 0.5 0.5], ...
-    %     'EdgeColor','none', 'FaceAlpha',0.5, ...
-    %     'DisplayName', '95% CI');
-    % plot(t, y_hat_2, 'DisplayName', ...
-    %     "\beta = " + values("beta") + ", \lambda = " + values("lambda"));
-
-
 end
 
 plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'y_2');
@@ -127,9 +102,10 @@ ylabel('Torque');
 title('$y_2$ and $\hat{y}_2$', 'Interpreter', 'latex');
 
 %% MSE comparison
-MSE = zeros(size(param, 1), 1);
-for i = 1:numel(param)
-    values = param{i}; 
+
+MSE = zeros(size(PARAM, 1), 1);
+for i = 1:numel(PARAM)
+    values = PARAM{i};
     y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
     error = y_hat_2-y2;
     MSE(i) = (transpose(error)*error) / N;
@@ -145,11 +121,11 @@ LAMBDA_COLLECTION = {
     dictionary(["lambda","beta"], [10,   100]);
     dictionary(["lambda","beta"], [100,  100]);
     dictionary(["lambda","beta"], [1000, 100]);
-};
-figure; 
+    };
+figure;
 hold on;
 for i = 1:numel(LAMBDA_COLLECTION)
-    values = LAMBDA_COLLECTION{i}; 
+    values = LAMBDA_COLLECTION{i};
     y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
     plot(t, y_hat_2, 'DisplayName', ...
         "\beta = " + values("beta") + ", \lambda = " + values("lambda"));
@@ -158,7 +134,7 @@ plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'y_2');
 legend show;
 xlabel('Time');
 ylabel('Torque');
-title('$y_2$ and $\hat{y}_2$', 'Interpreter', 'latex');
+title('$y_2$ and $\hat{y}_2$ changing $\lambda$', 'Interpreter', 'latex');
 
 % Role of Beta
 BETA_COLLECTION = {
@@ -166,11 +142,11 @@ BETA_COLLECTION = {
     dictionary(["lambda","beta"], [100,   10]);
     dictionary(["lambda","beta"], [100,  100]);
     dictionary(["lambda","beta"], [100, 1000]);
-};
-figure; 
+    };
+figure;
 hold on;
 for i = 1:numel(BETA_COLLECTION)
-    values = BETA_COLLECTION{i}; 
+    values = BETA_COLLECTION{i};
     y_hat_2 = g_map(y1, x2, x1, values("beta"), values("lambda"), sigma_square);
     plot(t, y_hat_2, 'DisplayName', ...
         "\beta = " + values("beta") + ", \lambda = " + values("lambda"));
@@ -179,8 +155,7 @@ plot(t, y2, 'k', 'LineWidth', 1.2, 'DisplayName', 'y_2');
 legend show;
 xlabel('Time');
 ylabel('Torque');
-title('$y_2$ and $\hat{y}_2$', 'Interpreter', 'latex');
-
+title('$y_2$ and $\hat{y}_2$ changing $\beta$', 'Interpreter', 'latex');
 
 %% Feedforward Control
 
@@ -190,9 +165,9 @@ wdd = derivative(wd, Ts);
 
 xf = [w wd wdd];
 
-yf_matrix = zeros(size(w, 1), numel(param));
-for i = 1:numel(param)
-    values = param{i};
+yf_matrix = zeros(size(w, 1), numel(PARAM));
+for i = 1:numel(PARAM)
+    values = PARAM{i};
     yf_matrix(:,i) = g_map(y1, xf, x1, values("beta"), values("lambda"), sigma_square);
 end
 
@@ -204,26 +179,3 @@ K21 = lambda * Cauchy_kernel(x, x1, beta);
 y_hat = K21 * inv(K11 + sigma_square * eye(size(x1, 1))) * y1;
 end
 
-function [y_hat, ci_low, ci_high] = g_map_ci(y1, x, x1, beta, lambda, sigma_square)
-
-% Covariance matrices
-K11 = lambda * Cauchy_kernel(x1, x1, beta);
-K21 = lambda * Cauchy_kernel(x, x1, beta);
-K12 = K21';
-K22 = lambda * Cauchy_kernel(x, x, beta);
-
-y_hat = K21 * inv(K11 + sigma_square * eye(size(x1, 1))) * y1;
-
-K_pos = K22 - K21 * inv(K11 + sigma_square * eye(size(x1, 1))) * K12;
-
-cov_diag = diag(K_pos);
-
-% Ensure non-negative variances
-cov_diag = max(cov_diag, 0);
-
-% 95% confidence interval
-sd = sqrt(cov_diag);
-z = 1.96; % for 95%
-ci_low = y_hat - z * sd;
-ci_high = y_hat + z * sd;
-end
