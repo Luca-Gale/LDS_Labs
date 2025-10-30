@@ -7,19 +7,19 @@ load(".\manipulator1.mat");
 %% Data plotting
 
 figure;
-subplot(3,1,1)
+subplot(3,1,1);
 plot(t, u1);
 xlabel('Time (s)');
 ylabel('Angular Position u1');
 grid on;
 
-subplot(3,1,2)
+subplot(3,1,2);
 plot(t, u1d);
 xlabel('Time (s)');
 ylabel('Angular Velocity u1d');
 grid on;
 
-subplot(3,1,3)
+subplot(3,1,3);
 plot(t, y1);
 xlabel('Time (s)');
 ylabel('Torque y1');
@@ -27,19 +27,19 @@ grid on;
 sgtitle('First data set');
 
 figure;
-subplot(3,1,1)
+subplot(3,1,1);
 plot(t, u2);
 xlabel('Time (s)');
 ylabel('Angular Position u2');
 grid on;
 
-subplot(3,1,2)
+subplot(3,1,2);
 plot(t, u2d);
 xlabel('Time (s)');
 ylabel('Angular Velocity u2d');
 grid on;
 
-subplot(3,1,3)
+subplot(3,1,3);
 plot(t, y2);
 xlabel('Time (s)');
 ylabel('Torque y2');
