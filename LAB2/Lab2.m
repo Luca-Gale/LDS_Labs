@@ -2,14 +2,9 @@ clear
 close all
 clc
 
-
-doublecheck = zeros(4,1);
-
-for i=1:200
-
 % Model generation / Data generation
 
-N = 8000; % length of the data
+N = 200; % length of the data
 Ts = 1;  % sampling time
 
 % Coefficientes of the actual model (e.g. ARX model):
@@ -25,8 +20,6 @@ alpha1 = 1/8;
 alpha2 = 1/2;
 k_sin = 5; % number of sinusoids
 u = idinput(N,'sine',[alpha1 alpha2],[],k_sin)*4;
-
-
 
 % Generate NORMALIZED WGN noise en0 (i.e. en0 has variance equal to one)
 en0 = idinput(N,'rgs');
@@ -46,13 +39,12 @@ u = iddata([],u,Ts);
 % noise data en0
 en0 = iddata([],en0,Ts); 
 
+
 % Generation of the output data given model, input and noise
 y = sim(m0, [u en0]);
 
 % Creation of an iddata object for the output and input data 
 data = iddata(y,u);
-
-
 
 %% PEM method
 
@@ -131,18 +123,23 @@ m_bj.NoiseVariance % sigma^2
 
 
 %% Bode plot of the estimated input-output transfer functions
-% Mettere label
-% figure;
-% bodeplot(m0,m_arx)
-% figure;
-% bodeplot(m0,m_armax)
-% figure;
-% bodeplot(m0,m_oe)
-% figure;
-% bodeplot(m0,m_bj)
+figure;
+bodeplot(m0, m_arx);
+title(findall(gcf,'type','title'),'Bode Plot: ARX Model vs True System');
+figure;
+bodeplot(m0,m_armax);
+title(findall(gcf,'type','title'),'Bode Plot: ARMAX Model vs True System');
+figure;
+bodeplot(m0,m_oe);
+title(findall(gcf,'type','title'),'Bode Plot: OE Model vs True System');
+figure;
+bodeplot(m0,m_bj);
+title(findall(gcf,'type','title'),'Bode Plot: BJ Model vs True System');
 
 %% Confidence interval
 i = N;
+
+% Initialize summation
 S = zeros(4,4);
 
 while i>0 
@@ -153,25 +150,42 @@ end
 S = S./N;
 P = m_arx.NoiseVariance*inv(S);
 
-bounds = 1.96*[sqrt(P(1,1)/N); sqrt(P(2,2)/N); sqrt(P(3,3)/N); sqrt(P(4,4)/N)]
-
-a = m_arx.a; % A(z)
-b = m_arx.b; % B(z)
-
+% True parameters
 a10 = -0.96;
 a20 = 0.97;
 b00 = 2.99;
 b10 = -0.2;
+true_params = [a10; a20; b00; b10];
+param_names = {'a1','a2','b1','b2'}';
 
-errors = [abs(a(2)-a10); abs(a(3)-a20); abs(b(2)-b00); abs(b(3)-b10)]
+% Estimated parameters
+a = m_arx.a;
+b = m_arx.b;
+est_params  = [a(2); a(3); b(2); b(3)];
 
-check = [errors(1)<=bounds(1); errors(2)<=bounds(2); errors(3)<=bounds(3); errors(4)<=bounds(4)]
+% Compute confidence interval bounds
+CI_bounds = 1.96*[sqrt(P(1,1)/N); sqrt(P(2,2)/N); sqrt(P(3,3)/N); sqrt(P(4,4)/N)];
+
+% Compute absolute estimation error
+abs_errors = [abs(a(2)-a10); abs(a(3)-a20); abs(b(2)-b00); abs(b(3)-b10)];
+
+% Boolean vector: 1->inside CI, 0->outside CI
+check = [abs_errors(1)<=bounds(1); abs_errors(2)<=bounds(2); abs_errors(3)<=bounds(3); abs_errors(4)<=bounds(4)];
 
 
-
-doublecheck = doublecheck + check;
-
+figure;
+for k = 1:4
+    subplot(2,2,k)
+    errorbar(est_params(k), CI_bounds(k), 'o', 'MarkerSize', 8, 'LineWidth', 1.5);
+    hold on;
+    plot(true_params(k), 'rx', 'MarkerSize', 10, 'LineWidth', 2);
+    title(param_names{k});
+    ylabel('Value');
+    grid on;
+    xlim([0.5 1.5]);
+    ylim([est_params(k)-CI_bounds(k)*1.1 est_params(k)+CI_bounds(k)*1.1]);
 end
+sgtitle('Parameter Estimates with 95% Confidence Intervals');
 
 
 function Psi = sens(y,u,t)
