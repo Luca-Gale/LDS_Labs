@@ -60,8 +60,8 @@ orders_arx = [2 2 1];
 m_arx = arx(data,orders_arx);
 
 % Plot the coefficients of the estimated model
-m_arx.a % A(z)
-m_arx.b % B(z)
+m_arx.a % A(z) estimated
+m_arx.b % B(z) estimated
 m_arx.NoiseVariance % sigma^2
 
 
@@ -125,32 +125,48 @@ m_bj.NoiseVariance % sigma^2
 %% Bode plot of the estimated input-output transfer functions
 figure;
 bodeplot(m0, m_arx);
-title(findall(gcf,'type','title'),'Bode Plot: ARX Model vs True System');
+title("Bode Plot: ARX Model vs True System")
+legend("true model", "ARX model")
 figure;
 bodeplot(m0,m_armax);
-title(findall(gcf,'type','title'),'Bode Plot: ARMAX Model vs True System');
+title("Bode Plot: ARMAX Model vs True System")
+legend("true model", "ARMAX model")
 figure;
 bodeplot(m0,m_oe);
-title(findall(gcf,'type','title'),'Bode Plot: OE Model vs True System');
+title("Bode Plot: OE Model vs True System")
+legend("true model", "OE model")
 figure;
 bodeplot(m0,m_bj);
-title(findall(gcf,'type','title'),'Bode Plot: BJ Model vs True System');
+title("Bode Plot: BJ Model vs True System")
+legend("true model", "BJ model")
+
 
 %% Confidence interval
 i = N;
 
 % Initialize summation
 S = zeros(4,4);
-
+%% Method 1: We set initial conditions set to zero
 while i>0 
-    S = S+sens(y.OutputData,u.InputData,i)*sens(y.OutputData,u.InputData,i)';
+    S = S+sens(y.OutputData, u.InputData, i)* sens(y.OutputData, u.InputData, i)';
     i=i-1;
 end
 
 S = S./N;
-P = m_arx.NoiseVariance*inv(S);
+P_hat = m_arx.NoiseVariance*inv(S);
 
-% True parameters
+
+%% Method 2: We remove the first k=max{n_A, n_b}=2 rows
+k = 2;
+S_alternative = zeros(4,4);
+for t=k+1:N
+    S_alternative = S_alternative + sens(y.OutputData, u.InputData, t)* sens(y.OutputData, u.InputData, t)';
+end
+S_alternative = S_alternative./ (N-k);
+P_alternative = m_arx.NoiseVariance*inv(S_alternative);
+
+
+%% True parameters
 a10 = -0.96;
 a20 = 0.97;
 b00 = 2.99;
@@ -164,13 +180,13 @@ b = m_arx.b;
 est_params  = [a(2); a(3); b(2); b(3)];
 
 % Compute confidence interval bounds
-CI_bounds = 1.96*[sqrt(P(1,1)/N); sqrt(P(2,2)/N); sqrt(P(3,3)/N); sqrt(P(4,4)/N)];
+CI_bounds = 1.96*[sqrt(P_hat(1,1)/N); sqrt(P_hat(2,2)/N); sqrt(P_hat(3,3)/N); sqrt(P_hat(4,4)/N)];
 
 % Compute absolute estimation error
 abs_errors = [abs(a(2)-a10); abs(a(3)-a20); abs(b(2)-b00); abs(b(3)-b10)];
 
 % Boolean vector: 1->inside CI, 0->outside CI
-check = [abs_errors(1)<=bounds(1); abs_errors(2)<=bounds(2); abs_errors(3)<=bounds(3); abs_errors(4)<=bounds(4)];
+check = [abs_errors(1)<=CI_bounds(1); abs_errors(2)<=CI_bounds(2); abs_errors(3)<=CI_bounds(3); abs_errors(4)<=CI_bounds(4)];
 
 
 figure;
