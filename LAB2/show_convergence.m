@@ -15,7 +15,7 @@ alpha2 = 1/2;
 k_sin = 5; % number of sinusoids
 
 % NOise variance
-noiseVar = 4,6^2;
+noiseVar = 4.6^2;
 
 % Create actual model
 m0 = idpoly([],Fnum,Gnum,Gden,Fden,noiseVar,Ts);
