@@ -10,14 +10,14 @@ theta=in; % \hat theta_t
 % Nc=[3.04 -3.12 0.13]; % numerator of C(z)
 % Dc =[1 -0.987 -0.013]; % denominator of C(z)
 
-T_s = 0.001; % samplin time
+T_s = 0.001; % sampling time
 t_r = 0.1; % rising time
 O = 0.3; % overshoot
 
 xi = abs(log(O)) / (sqrt(pi^2 + (log(O))^2 ));
 omega_n = 1.8 / t_r;
 
-p = exp( (  (-xi*omega_n) + 1j*omega_n*sqrt(1-xi^2)   )*T_s );
+p = exp(((-xi*omega_n) + 1j*omega_n*sqrt(1-xi^2))*T_s);
 D_1 = [1 0 0];
 D_2 = [1 -p];
 D_3 = [1 -conj(p)];
@@ -32,7 +32,6 @@ Dc = conv(D, [1,-1]);
 
 %% Construct the outuput
 out=[Nc Dc];
-
 
 end
 

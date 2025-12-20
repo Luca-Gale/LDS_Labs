@@ -4,7 +4,6 @@
 %
 %
 
-
 %% Get the input variables
 na=1;
 nb=2;
@@ -19,12 +18,10 @@ y=in(2*(na+nb)+1+(na+nb)^2); % y(t)
 %Sn = eye(3);
 % thetan=[-0.2 0.02 0.001]'; %\hat theta_t
 
-lambda = 1;
+lambda = .999;
 phi = [-ypast, u, upast]';
 Sn = lambda*S+phi*phi';
 thetan = theta + inv(Sn)*phi*(y - phi'*theta);
-
-
 
 %% Construct the outuput
 out=[thetan; y; u; reshape(Sn,(na+nb)^2,1)]; 
