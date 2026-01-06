@@ -18,10 +18,12 @@ y=in(2*(na+nb)+1+(na+nb)^2); % y(t)
 %Sn = eye(3);
 % thetan=[-0.2 0.02 0.001]'; %\hat theta_t
 
-lambda = .999;
+lambda = 0.95;
 phi = [-ypast, u, upast]';
 Sn = lambda*S+phi*phi';
 thetan = theta + inv(Sn)*phi*(y - phi'*theta);
 
 %% Construct the outuput
 out=[thetan; y; u; reshape(Sn,(na+nb)^2,1)]; 
+
+
