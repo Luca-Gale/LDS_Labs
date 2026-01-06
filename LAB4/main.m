@@ -1,6 +1,6 @@
-clear all
-close all
-clc
+clear all;
+close all;
+clc;
 
 %% Model generation / Data generation
 
@@ -10,26 +10,26 @@ Ts = 1;  %  sampling time
 % load data
 load house.mat;
 
-% %% plotting
-% t = 1:N;
-% figure(1);
-% hold on;
-% plot(t, u);
-% plot(t, y);
-% legend('u', 'y');
-% 
-% figure(2);
-% plot(t, u);
-% legend('u');
-% 
-% figure(3);
-% plot(t, y);
-% legend('y');
+%% Data plotting
+t = 1:N;
+figure(1);
+hold on;
+plot(t, u);
+plot(t, y);
+legend('u', 'y');
 
-%% detrending
+figure(2);
+plot(t, u);
+legend('u');
+
+figure(3);
+plot(t, y);
+legend('y');
+
+%% Data detrending
 
 % Creation of an iddata object for the output and input data 
-data = iddata(y,u);
+data = iddata(y,u, Ts);
 
 % Compute the means of the data and store them in mu.InputOffset and
 % mu.OutputOffset
@@ -39,69 +39,40 @@ mu = getTrend(data,0);
 data_d = detrend(data,mu);
 
 % Delay estimation
-%nk = delayest(data_d);
 nk = 1;
 
+%% Model structure design
 
-%% M1 ARMAX
-% Estimation of an ARMAX model
-
+% M1 ARMAX
 % orders of the ARMAX model
 orders_armax_1(1) = 1;
 orders_armax_1(2) = 1;
 orders_armax_1(3) = 1;
 orders_armax_1(4) = nk;
 
-
 % ARMAX model estimation
 m_armax_1 = armax(data_d,orders_armax_1);
 
-% Plot the coefficient of the estimated model
-m_armax_1.a; % A(z)
-m_armax_1.b; % B(z)
-m_armax_1.c; % C(z)
-m_armax_1.NoiseVariance; % sigma^2
-
-%% M2 ARMAX
-% Estimation of an ARMAX model
-
+% M2 ARMAX
 % orders of the ARMAX model
 orders_armax_2(1) = 2;
 orders_armax_2(2) = 2;
 orders_armax_2(3) = 2;
 orders_armax_2(4) = nk;
 
-
 % ARMAX model estimation
 m_armax_2 = armax(data_d,orders_armax_2);
 
-% Plot the coefficient of the estimated model
-m_armax_2.a; % A(z)
-m_armax_2.b; % B(z)
-m_armax_2.c; % C(z)
-m_armax_2.NoiseVariance; % sigma^2
-
-
-%% Output error
-% Estimation of an OE model
-
+% M3 OE
 % orders of the OE model
 orders_oe(1) = 2;
 orders_oe(2) = 2;
 orders_oe(3) = nk;
 
-
 % OE model estimation
 m_oe = oe(data_d,orders_oe);
 
-% Plot the coefficient of the estimated model
-m_oe.b; % B(z)
-m_oe.f; % F(z)
-m_oe.NoiseVariance; % sigma^2
-
-%% Box Jenkins
-% Estimation of a Box-Jenkins model
-
+% M4 BJ
 % coefficients of the BJ model
 orders_bj(1) = 2;
 orders_bj(2) = 2;
@@ -109,75 +80,67 @@ orders_bj(3) = 2;
 orders_bj(4) = 2;
 orders_bj(5) = nk;
 
-
 % BJ model generation
 m_bj = bj(data_d,orders_bj);
 
-% Plot the coefficient of the estimated model
-m_bj.b; % B(z)
-m_bj.c; % C(z)
-m_bj.d;% D(z) 
-m_bj.f; % F(z)
-m_bj.NoiseVariance; % sigma^2
-
-
-%% Model structure determination
-
-% Residual Analysis
+%% Residual Analysis
 
 % the confidence interval corresponds to 99%
-% figure;
-% resid(m_armax_1, data_d,'corr', 'r');
-% figure;
-% resid(m_armax_2, data_d,'corr', 'r');
-% figure;
-% resid(m_oe, data_d,'corr', 'r');
-% figure;
-% resid(m_bj, data_d,'corr', 'r');
+figure;
+resid(m_armax_1, data_d,'corr', 'r');
+figure;
+resid(m_armax_2, data_d,'corr', 'r');
+figure;
+resid(m_oe, data_d,'corr', 'r');
+figure;
+resid(m_bj, data_d,'corr', 'r');
 
+%% Zero-Pole cancellation analysis
 
+% Zeros and Poles plot  
+figure;
+iopzplot(m_armax_1)
+figure;
+iopzplot(m_armax_2)
+figure;
+iopzplot(m_oe)
+figure;
+iopzplot(m_bj)
 
+%% Criteria with complexity term
 
-% Zero-Pole cancellation analysis
-
-% % Zeros and Poles plot  
-% figure;
-% iopzplot(m_armax_1)
-% figure;
-% iopzplot(m_armax_2)
-% figure;
-% iopzplot(m_oe)
-% figure;
-% iopzplot(m_bj)
-
+% Model names
+Model = {'ARMAX 1'; 'ARMAX 2'; 'OE'; 'BJ'};
 
 % SURE index
-SURE_indexes = zeros(4, 1);
-SURE_indexes(1) = sure(m_armax_1);
-SURE_indexes(2) = sure(m_armax_2);
-SURE_indexes(3) = sure(m_oe);
-SURE_indexes(4) = sure(m_bj);
-SURE_indexes;
+SURE = [
+    sure(m_armax_1)
+    sure(m_armax_2)
+    sure(m_oe)
+    sure(m_bj)
+];
 
 % AIC index
-AIC_indexes = zeros(4, 1);
-AIC_indexes(1) = aic(m_armax_1);
-AIC_indexes(2) = aic(m_armax_1);
-AIC_indexes(3) = aic(m_oe);
-AIC_indexes(4) = aic(m_bj);
-AIC_indexes;
+AIC = [
+    aic(m_armax_1)
+    aic(m_armax_2)
+    aic(m_oe)
+    aic(m_bj)
+];
 
 % BIC index
-BIC_indexes = zeros(4, 1);
-BIC_indexes(1) = bic(m_armax_1);
-BIC_indexes(2) = bic(m_armax_2);
-BIC_indexes(3) = bic(m_oe);
-BIC_indexes(4) = bic(m_bj);
-BIC_indexes;
+BIC = [
+    bic(m_armax_1)
+    bic(m_armax_2)
+    bic(m_oe)
+    bic(m_bj)
+];
 
-% Hold out cross validation
-% (ATTENTION: for the cross-validation the comparison has to be done on 
-% the validation dataset)
+ResultsTable = table(Model, SURE, AIC, BIC)
+
+
+%% Hold-out Cross-validation
+
 % prediction k-steps ahead from zero initial conditions
 k = 1; 
 
@@ -193,12 +156,13 @@ data_validation = iddata(output_validation, input_validation);
 
 % Compute the means of the data and store them in mu.InputOffset and
 % mu.OutputOffset
-mu_training = getTrend(data_training,0);
-mu_validation = getTrend(data_validation, 0);
+mu_training = getTrend(data_training, 0);
+%mu_validation = getTrend(data_validation, 0);
 
-% Perform the data detrend
+% Perform the data detrend (NB: the mean of training dataset is used 
+% to detrend both sets)
 data_training_d = detrend(data_training, mu_training);
-data_validation_d = detrend(data_validation, mu_validation);
+data_validation_d = detrend(data_validation, mu_training);
 % temp_1 = data_d.InputData(1:500);
 % temp_2 = data_d.InputData(501:1000);
 % temp_3 = data_d.OutputData(1:500);
