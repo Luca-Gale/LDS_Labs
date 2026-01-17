@@ -12,19 +12,33 @@ load house.mat;
 
 %% plotting
 t = 1:N;
+%% Data Visualization
+% Define time axis based on the number of samples N
+t = 1:N; 
+
 figure(1);
-hold on;
-plot(t, u);
-plot(t, y);
-legend('u', 'y');
+plot(t, u, 'b', t, y, 'r'); % Plotting both in one command for efficiency
+title('Input (u) and Output (y) Comparison');
+xlabel('Time [samples]');
+ylabel('Amplitude');
+legend('Input (u)', 'Output (y)');
+grid on;
 
 figure(2);
-plot(t, u);
+plot(t, u, 'b');
+title('Input Signal (u)');
+xlabel('Time [samples]');
+ylabel('Amplitude');
 legend('u');
+grid on;
 
 figure(3);
-plot(t, y);
+plot(t, y, 'r');
+title('Output Signal (y)');
+xlabel('Time [samples]');
+ylabel('Amplitude');
 legend('y');
+grid on;
 
 %% detrending
 
@@ -82,31 +96,31 @@ arxOpt_m4.Regularization.Lambda = Lambda;
 arxOpt_m4.Regularization.R = R;
 model_m4 = arx(data_d, Orders, arxOpt_m4);
 
-%% Plot A(z), B(z)
+%% Impulse Response Visualization (A(z) and B(z))
+% This section visualizes the estimated models M1, M2, M3, and M4 [cite: 19, 20]
 
-% m1
-figure;
-plot(model_m1.A)
-figure;
-plot(model_m1.B)
+models = {model_m1, model_m2, model_m3, model_m4};
+model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
 
-% m2
-figure;
-plot(model_m2.A)
-figure;
-plot(model_m2.B)
-
-% m3
-figure;
-plot(model_m3.A)
-figure;
-plot(model_m3.B)
-
-% m4
-figure;
-plot(model_m4.A)
-figure;
-plot(model_m4.B)
+for i = 1:4
+    figure('Name', sprintf('Impulse Responses for %s', model_names{i}), 'NumberTitle', 'off');
+    
+    % Plot Impulse Response of A(z)
+    subplot(2, 1, 1);
+    plot(models{i}.A, 'LineWidth', 1.5);
+    title([model_names{i}, ': Impulse Response of A(z)']);
+    xlabel('Lag');
+    ylabel('Amplitude');
+    grid on;
+    
+    % Plot Impulse Response of B(z)
+    subplot(2, 1, 2);
+    plot(models{i}.B, 'LineWidth', 1.5, 'Color', 'r');
+    title([model_names{i}, ': Impulse Response of B(z)']);
+    xlabel('Lag');
+    ylabel('Amplitude');
+    grid on;
+end
 
 %% Compare different negative log likelihood
 negative_log_likelihood = [log_negative_likelihood_m1;
@@ -143,51 +157,36 @@ m4_training = arx(data_training_d, Orders, arxOpt_m4);
 
 opt = compareOptions('InitialCondition','z');
 
-% figure;
-% compare(data_validation_d, m1_training, 1, opt)
-% figure;
-% compare(data_validation_d, m1_training, 2, opt)
-% figure;
-% compare(data_validation_d, m1_training, 3, opt)
-% figure;
-% compare(data_validation_d, m1_training, 4, opt)
-% figure;
-% compare(data_validation_d, m2_training, 1, opt)
-% figure;
-% compare(data_validation_d, m2_training, 2, opt)
-% figure;
-% compare(data_validation_d, m2_training, 3, opt)
-% figure;
-% compare(data_validation_d, m2_training, 4, opt)
-% figure;
-% compare(data_validation_d, m3_training, 1, opt)
-% figure;
-% compare(data_validation_d, m3_training, 2, opt)
-% figure;
-% compare(data_validation_d, m3_training, 3, opt)
-% figure;
-% compare(data_validation_d, m3_training, 4, opt)
-% figure;
-% compare(data_validation_d, m4_training, 1, opt)
-% figure;
-% compare(data_validation_d, m4_training, 2, opt)
-% figure;
-% compare(data_validation_d, m4_training, 3, opt)
-% figure;
-% compare(data_validation_d, m4_training, 4, opt)
-% 
+models_training = {m1_training, m2_training, m3_training, m4_training};
+model_labels    = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
+horizons        = 1:4;
+
+for i = 1:length(models_training)
+    figure('Name', sprintf('Validation: %s', model_labels{i}), 'NumberTitle', 'off');
+    
+    for h = horizons
+        subplot(2, 2, h);
+        
+        compare(data_validation_d, models_training{i}, h, opt);
+        
+        title(sprintf('%s: %d-step ahead', model_labels{i}, h));
+        grid on;
+    end
+end
 
 %% Cross correlation and auto correlation
 % the confidence interval corresponds to 99%
-% figure;
-% resid(model_m1, data_d,'corr', 'r');
-% figure;
-% resid(model_m2, data_d,'corr', 'r');
-% figure;
-% resid(model_m3, data_d,'corr', 'r');
-% figure;
-% resid(model_m4, data_d,'corr', 'r');
+models = {model_m1, model_m2, model_m3, model_m4};
+model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
+figure('Name', 'Residual Analysis Comparison', 'NumberTitle', 'off');
 
+for i = 1:4
+    subplot(2, 2, i);
+    resid(models{i}, data_d, 'corr'); 
+    
+    title(['Residuals: ', model_names{i}]);
+    grid on;
+end
 %% SURE index
 % SURE index
 SURE_indexes = zeros(4, 1);
@@ -215,6 +214,6 @@ for i=1:21
     comp_time(i) = toc;
 end
 
-standard_deviation = std(comp_time)
-mean_time = mean(comp_time)
+standard_deviation = std(comp_time);
+mean_time = mean(comp_time);
 
