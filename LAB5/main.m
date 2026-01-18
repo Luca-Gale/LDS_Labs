@@ -10,14 +10,12 @@ Ts = 1;  %  sampling time
 % load data
 load house.mat;
 
-%% plotting
-t = 1:N;
 %% Data Visualization
 % Define time axis based on the number of samples N
 t = 1:N; 
 
 figure(1);
-plot(t, u, 'b', t, y, 'r'); % Plotting both in one command for efficiency
+plot(t, u, 'b', t, y, 'r');
 title('Input (u) and Output (y) Comparison');
 xlabel('Time [samples]');
 ylabel('Amplitude');
@@ -41,7 +39,6 @@ legend('y');
 grid on;
 
 %% detrending
-
 % Creation of an iddata object for the output and input data
 data = iddata(y,u);
 
@@ -52,16 +49,13 @@ mu = getTrend(data,0);
 % Perform the data detrend
 data_d = detrend(data,mu);
 
-% Delay estimation
-%nk = delayest(data_d);
-
 %% Create models
 na = 50;
 nb = 50;
 nk = 1;
 
 % M1
-Orders = [na nb nk]; % [n_a, n_b, n_k]
+Orders = [na nb nk];
 Option = arxRegulOptions('RegulKernel', 'DI');
 [Lambda, R, log_negative_likelihood_m1, df_m1] = arxRegul(data_d, Orders, Option); % use data_d
 arxOpt_m1 = arxOptions;
@@ -70,7 +64,7 @@ arxOpt_m1.Regularization.R = R;
 model_m1 = arx(data_d, Orders, arxOpt_m1);
 
 % M2
-Orders = [na nb nk]; % [n_a, n_b, n_k]
+Orders = [na nb nk];
 Option = arxRegulOptions('RegulKernel', 'TC');
 [Lambda, R, log_negative_likelihood_m2, df_m2] = arxRegul(data_d, Orders, Option); % use data_d
 arxOpt_m2 = arxOptions;
@@ -79,7 +73,7 @@ arxOpt_m2.Regularization.R = R;
 model_m2 = arx(data_d, Orders, arxOpt_m2);
 
 % M3
-Orders = [na nb nk]; % [n_a, n_b, n_k]
+Orders = [na nb nk];
 Option = arxRegulOptions('RegulKernel', 'SS');
 [Lambda, R, log_negative_likelihood_m3, df_m3] = arxRegul(data_d, Orders, Option); % use data_d
 arxOpt_m3 = arxOptions;
@@ -88,7 +82,7 @@ arxOpt_m3.Regularization.R = R;
 model_m3 = arx(data_d, Orders, arxOpt_m3);
 
 % M4
-Orders = [na nb nk]; % [n_a, n_b, n_k]
+Orders = [na nb nk];
 m = 5;
 [Lambda, R, log_negative_likelihood_m4, df_m4] = arxRegulRF2(data_d , Orders, m); % use data_d
 arxOpt_m4 = arxOptions;
@@ -97,10 +91,8 @@ arxOpt_m4.Regularization.R = R;
 model_m4 = arx(data_d, Orders, arxOpt_m4);
 
 %% Impulse Response Visualization (A(z) and B(z))
-% This section visualizes the estimated models M1, M2, M3, and M4 [cite: 19, 20]
-
 models = {model_m1, model_m2, model_m3, model_m4};
-model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
+model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF)'};
 
 for i = 1:4
     figure('Name', sprintf('Impulse Responses for %s', model_names{i}), 'NumberTitle', 'off');
@@ -128,7 +120,6 @@ negative_log_likelihood = [log_negative_likelihood_m1;
                             log_negative_likelihood_m3;
                             log_negative_likelihood_m4;]
 
-
 %% Hold cross validation
 input_training = u(1:500);
 output_training = y(1:500);
@@ -142,7 +133,7 @@ data_validation = iddata(output_validation, input_validation);
 
 % Compute the means of the data and store them in mu.InputOffset and
 % mu.OutputOffset
-mu_training = getTrend(data_training,0);
+mu_training = getTrend(data_training, 0);
 mu_validation = getTrend(data_validation, 0);
 
 % Perform the data detrend
@@ -158,7 +149,7 @@ m4_training = arx(data_training_d, Orders, arxOpt_m4);
 opt = compareOptions('InitialCondition','z');
 
 models_training = {m1_training, m2_training, m3_training, m4_training};
-model_labels    = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
+model_labels    = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF)'};
 horizons        = 1:4;
 
 for i = 1:length(models_training)
@@ -177,7 +168,7 @@ end
 %% Cross correlation and auto correlation
 % the confidence interval corresponds to 99%
 models = {model_m1, model_m2, model_m3, model_m4};
-model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF-SS)'};
+model_names = {'M1 (DI)', 'M2 (TC)', 'M3 (SS)', 'M4 (RF)'};
 figure('Name', 'Residual Analysis Comparison', 'NumberTitle', 'off');
 
 for i = 1:4
@@ -187,33 +178,52 @@ for i = 1:4
     title(['Residuals: ', model_names{i}]);
     grid on;
 end
+
 %% SURE index
-% SURE index
 SURE_indexes = zeros(4, 1);
 SURE_indexes(1) = surek(model_m1, df_m1);
 SURE_indexes(2) = surek(model_m2, df_m2);
 SURE_indexes(3) = surek(model_m3, df_m3);
 SURE_indexes(4) = surek(model_m4, df_m4);
-SURE_indexes;
+SURE_indexes
 
 %% computation time
-comp_time = zeros(21,1);
-Orders = [na nb nk]; % [n_a, n_b, n_k]
+comp_times = zeros(20,2);
+Orders = [na nb nk];
 Option = arxRegulOptions('RegulKernel', 'SS');
 m = 5;
 
-for i=1:21
+for i=1:20
     tic
 
     % M3
     [Lambda, R, log_negative_likelihood_m3, df_m3] = arxRegul(data_d, Orders, Option); % use data_d
 
+    comp_times(i,1) = toc;
+end
+
+std_SS = std(comp_times(:,1));
+mean_SS = mean(comp_times(:,1));
+
+for i=1:20
+    tic
+
     % M4
     [Lambda, R, log_negative_likelihood_m4, df_m4] = arxRegulRF2(data_d , Orders, m); % use data_d
 
-    comp_time(i) = toc;
+    comp_times(i,2) = toc;
 end
 
-standard_deviation = std(comp_time);
-mean_time = mean(comp_time);
+std_RF = std(comp_times(:,2));
+mean_RF = mean(comp_times(:,2));
 
+%% Results table
+Method = {'M3 (SS)'; 'M4 (RF)'};
+MeanTime = [mean_SS; mean_RF];
+StdTime  = [std_SS; std_RF];
+
+ResultsTable = table(MeanTime, StdTime, ...
+    'RowNames', Method, ...
+    'VariableNames', {'Mean', 'Std'});
+
+disp(ResultsTable)
